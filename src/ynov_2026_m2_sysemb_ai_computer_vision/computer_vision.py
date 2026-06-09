@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 from time import sleep
+from json import load
 
 class ComputerVision():
     def discover_opencv(self):
@@ -78,5 +79,62 @@ class ComputerVision():
             if (cv2.waitKey(1) in [ord('q')]):
                 break
     
+        capture.release()
+        cv2.destroyAllWindows()
+
+    def discover_lines_and_shapes_and_text(self):
+        image = cv2.imread('moi.jpeg', cv2.IMREAD_UNCHANGED)
+        height, width, _ = image.shape
+
+        image = cv2.line(image, (0,0), (width, height), (0,0,255), 5)
+        image = cv2.line(image, (width,0), (0, height), (0,0,255), 5)
+        image = cv2.line(image, (width//2, 0), (width//2, height), (0,0,255), 5)
+        image = cv2.line(image, (0, height//2), (width, height//2), (0,0,255), 5)
+
+        image = cv2.circle(image, (width//2, height//2), 50, (0, 255, 255), 10)
+        image = cv2.circle(image, (width//2, height//2), height//2, (0, 255, 255), 10)
+        image = cv2.circle(image, (width//2, height//2), width//2, (0, 255, 255), 10)
+
+        margin = 20
+        image = cv2.rectangle(image, (margin, margin), (width-margin, height-margin), (255,255,0), 20)
+
+        font = cv2.FONT_HERSHEY_PLAIN
+        image = cv2.putText(image, "Nicolas METIVIER", (10, height), font, 4, (255,255,255), 5, cv2.LINE_AA)
+
+        cv2.imshow("""Photo""", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    def discover_colors_detectors(self):
+        capture = cv2.VideoCapture("poussins.mp4")
+
+        while True:
+            ret, frame = capture.read()
+
+            # Réinitialiser la vidéo au début
+            if not ret:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+
+            # ...
+            hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+            with open("color-threshold.json", "r") as file:
+                color_threshold = load(file)
+
+            upper_threshold = np.array([color_threshold["red"]["upper"], color_threshold["green"]["upper"], color_threshold["blue"]["upper"]]) # R, G, B
+            lower_threshold = np.array([color_threshold["red"]["lower"], color_threshold["green"]["lower"], color_threshold["blue"]["lower"]]) # R, G, B
+
+            mask = cv2.inRange(hsv_frame, lower_threshold, upper_threshold)
+            filtered_frame = cv2.bitwise_and(frame, frame, mask=mask)
+
+
+            cv2.imshow("Orignal Frame", frame)
+            cv2.imshow("HSV Frame", hsv_frame)
+            cv2.imshow("Yellow Mask",mask)
+            cv2.imshow("Filtered Frame",filtered_frame)
+
+            if (cv2.waitKey(1) == ord('q')):
+                break
         capture.release()
         cv2.destroyAllWindows()

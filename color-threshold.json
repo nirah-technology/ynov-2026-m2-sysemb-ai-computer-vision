@@ -1,0 +1,14 @@
+{
+    "red": {
+        "lower": 0,
+        "upper": 255
+    },
+    "green": {
+        "lower": 0,
+        "upper": 255
+    },
+    "blue": {
+        "lower": 190,
+        "upper": 255
+    }
+}
