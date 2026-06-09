@@ -1,0 +1,22 @@
+[project]
+name = "ynov-2026-m2-sysemb-ai-computer-vision"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Nicolas Metivier",email = "nicolas.a.metivier@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "opencv-python (>=4.13.0.92,<5.0.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "ynov_2026_m2_sysemb_ai_computer_vision", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+start = "ynov_2026_m2_sysemb_ai_computer_vision.main:main"
