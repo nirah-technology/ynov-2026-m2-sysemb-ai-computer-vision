@@ -215,16 +215,88 @@ class ComputerVision():
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def discover_find_outlines(self):
-        image = cv2.imread('formule1.png')
-        black_background = np.zeros(image.shape, np.uint8)
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray_image, 70, 250)
+    def detect_contours(self, gray_image, threshold1=50, threshold2=100):
+        edges = cv2.Canny(gray_image, threshold1, threshold2)
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        return contours
 
-        for contour in contours:
-            cv2.drawContours(black_background, [contour], -1, (0, 255, 0), 1)
-        
-        cv2.imshow("Contours", black_background)
-        cv2.waitKey(0)
+    def discover_find_outlines(self):
+
+        capture = cv2.VideoCapture("circulation.mp4")
+
+        while True:
+
+            _, image = capture.read()
+
+            if not _:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+
+            # black_background = np.zeros(image.shape, np.uint8)
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            contours = self.detect_contours(gray_image)
+
+            for contour in contours:
+                cv2.drawContours(image, [contour], -1, (0, 255, 0), 2)
+            
+            zoom = 0.3
+            image = cv2.resize(image, (0, 0), fx=zoom, fy=zoom)
+
+            cv2.imshow("Contours", image)
+            
+
+            if (cv2.waitKey(1) == ord('q')):
+                break
+        capture.release()
+        cv2.destroyAllWindows()
+
+    def discorver_geometric_shapes(self):
+        capture = cv2.VideoCapture("circulation.mp4")
+        while True:
+            ret, frame = capture.read()
+
+            if not ret:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                continue
+
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            contours = self.detect_contours(gray_frame)
+            for contour in contours:
+                is_closed = True # cv2.isContourConvex(contour)
+                perimeter = cv2.arcLength(contour, is_closed)
+                approx = cv2.approxPolyDP(contour, 0.04 * perimeter, is_closed)
+                points = len(approx)
+                shape_name = "Inconnu"
+
+                width = cv2.boundingRect(contour)[2]
+                height = cv2.boundingRect(contour)[3]
+
+                if points == 3:
+                    shape_name = "Triangle"
+                elif points == 4:
+                    ration = width / height
+                    if ration >= 0.95 and ration <= 1.05:
+                        shape_name = "Carré"
+                    else:
+                        shape_name = "Rectangle"
+
+                elif points == 8:
+                    shape_name = "Octogone"
+                
+                elif points > 8:
+                    area = cv2.contourArea(contour)
+                    circularity = (4 * np.pi * area) / (perimeter ** 2)
+                    if circularity > 0.85:
+                        shape_name = "Cercle"
+                    elif circularity > 0.75:
+                        shape_name = "Ellipse"
+
+                cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+
+                cv2.putText(frame, shape_name, (contour[0][0][0] - 5, contour[0][0][1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
+            cv2.imshow("Contours", frame)
+            if (cv2.waitKey(1) == ord('q')):
+                break
+        capture.release()
         cv2.destroyAllWindows()
