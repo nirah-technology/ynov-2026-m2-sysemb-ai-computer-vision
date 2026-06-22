@@ -8,7 +8,7 @@ class ComputerVision():
     def discover_opencv(self):
 
         # On charge une image, et on garde la couleur, ou on la mets en nuance de gris.
-        image =cv2.imread('moi.jpeg', cv2.IMREAD_GRAYSCALE)
+        image = cv2.imread('moi.jpeg', cv2.IMREAD_GRAYSCALE)
 
         # On redimenssionne l'image -> scale.
         zoom = 0.5
@@ -300,3 +300,81 @@ class ComputerVision():
                 break
         capture.release()
         cv2.destroyAllWindows()
+
+    def discover_tracker_kcf(self):
+        # 1. Chargement de la vidéo et du template (la voiture à chercher)
+        capture = cv2.VideoCapture("circulation.mp4")
+        
+        # On charge l'image de la voiture (en couleur BGR normale, pas HSV pour le template matching)
+        template = cv2.imread('red-card.png')
+        
+        # Il est crucial que le template soit à la même échelle que la voiture dans la vidéo.
+        # Si besoin, applique le même zoom ou redimensionne-le :
+        # template = cv2.resize(template, (largeur, hauteur))
+        
+        h_temp, w_temp = template.shape[:2]
+
+        # 2. Initialisation du tracker KCF
+        tracker = cv2.TrackerKCF.create()
+        tracker_initialized = False
+        zoom = 0.4
+        
+        # Seuil de confiance pour le template matching (0.7 = 70% de ressemblance minimum)
+        THRESHOLD = 0.7 
+
+        while True:
+            has_frame, capture_image = capture.read()
+
+            if not has_frame:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                tracker = cv2.TrackerKCF.create()
+                tracker_initialized = False
+                continue
+        
+            capture_image = cv2.resize(capture_image, (0, 0), fx=zoom, fy=zoom)
+
+            if not tracker_initialized:
+                # --- PHASE DE RECHERCHE PAR TEMPLATE MATCHING (3 premières secondes) ---
+                
+                # On applique l'algorithme de correspondance
+                result = cv2.matchTemplate(capture_image, template, cv2.TM_CCOEFF_NORMED)
+                
+                # On récupère le score maximum et sa position
+                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+                
+                # Si le score de ressemblance dépasse notre seuil, on considère qu'on a trouvé la voiture
+                if max_val > THRESHOLD:
+                    x, y = max_loc
+                    bbox = (x, y, w_temp, h_temp) # La taille de la box est celle du template
+                    
+                    # Initialisation du KCF sur la zone trouvée
+                    tracker.init(capture_image, bbox)
+                    tracker_initialized = True
+                else:
+                    cv2.putText(capture_image, "Recherche de la voiture (Template)...", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            
+            else:
+                # --- PHASE DE TRACKING KCF ---
+                ok, bbox = tracker.update(capture_image)
+
+                if ok:
+                    p1 = (int(bbox[0]), int(bbox[1]))
+                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                    cv2.rectangle(capture_image, p1, p2, (0, 0, 255), 3)
+                    cv2.putText(capture_image, "TRACKING", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                else:
+                    cv2.putText(capture_image, "Cible perdue !", (10, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                    tracker_initialized = False
+                    tracker = cv2.TrackerKCF.create()
+
+            cv2.imshow("Surveillance", capture_image)
+
+            if cv2.waitKey(1) in [ord('q'), 27]:
+                break
+
+        capture.release()
+        cv2.destroyAllWindows()
+    

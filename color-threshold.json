@@ -1,14 +1,14 @@
 {
     "red": {
-        "lower": 0,
-        "upper": 255
+        "lower": 70,
+        "upper": 200
     },
     "green": {
         "lower": 0,
-        "upper": 255
+        "upper": 200
     },
     "blue": {
-        "lower": 190,
+        "lower": 0,
         "upper": 255
     }
 }
